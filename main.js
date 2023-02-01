@@ -6,13 +6,11 @@ const porcentajePami = 0.03
 let nombre
 let mes
 
-
-
 // Función que saluda al usuario y pide datos personales
 function inicio(){
-    alert("Bienvenido al programa de cálculo de sueldos 💸")
+    alert("💸 Bienvenido al programa de cálculo de sueldos")
     nombre = prompt("👋🏽 Por favor, ingresa tu nombre para continuar:")
-    mes = prompt("🗓 Indicá el mes a liquidar (ej: febrero 2023): ")
+    mes = prompt("🗓 Indicá el mes a liquidar (ej: febrero 2023):", 'febrero 2023')
 
     menu()
 }
@@ -42,8 +40,8 @@ function menu(){
                 ingresaHorasExtras()
                 break
             case '4':
-                calcularSueldo()
-                continuaMenu = salir()
+                let resultado = calcularSueldo()
+                if (resultado) continuaMenu = salir()
                 break
             case '5':
                 continuaMenu = salir()
@@ -105,16 +103,15 @@ let diasTrabajados
 function ingresaDias() {
     do {
         diasTrabajados = Number(prompt('🕓 Ingresá la cantidad de días que trabajaste en ' + mes + ':'))
-
     } while (diasTrabajados <= 0 || diasTrabajados > 30 || isNaN(diasTrabajados))
 
     alert('✅ Se han ingresado ' + diasTrabajados + ' días.')
 }
 
-const extrasSemana = 1.5
-const extrasFinSemana = 2
-let hsExtSemana
-let hsExtFinde
+const ponderadorExtrasSemana = 1.5
+const ponderadorExtrasFinde = 2
+let hsExtSemana = 0
+let hsExtFinde = 0
 
 function ingresaHorasExtras(){
     let opcion
@@ -124,7 +121,7 @@ function ingresaHorasExtras(){
         opcion = prompt('¿En qué momento realizaste las horas extras?' +
                     '\n 1.En la semana' +
                     '\n 2.Durante el fin de semana' +
-                    '\n\n (cancelar para detener el ingreso de información)'
+                    '\n\n (0 ó cancelar para detener el ingreso de información)'
         )
 
         switch (opcion) {
@@ -136,6 +133,7 @@ function ingresaHorasExtras(){
                 hsExtFinde = solicitarHoras()
                 alert('✅ Se han ingresado ' + hsExtFinde + ' horas extras realizadas en el fin de semana.')
                 break
+            case '0':
             case null:
                 continuaMenu = false
         }
@@ -147,24 +145,68 @@ function solicitarHoras() {
     let horas = 0
 
     do {
-        horas = prompt('➕ Ingresá la cantidad de horas extras que realizaste:')
+        horas = Number(prompt('➕ Ingresá la cantidad de horas extras que realizaste:'))
     } while (horas <= 0 || isNaN(horas))
 
     return horas
 }
 
+function currencyFormat (num) { // Fuente: https://stackoverflow.com/a/32086781
+    return "$" + num.toFixed(2).replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1,")
+}
+
 function calcularSueldo() {
-    // PENDIENTE
-    /*
-    0. Validar que esté el nombre, mes, convenio y dias trabajados (hs ext opcional)
-    1. Determinar salario base según convenio
-    2. Proporcionar días trabajados sobre el total
-    3. Adicionar horas extras al 50% o al 100%
-    4. Totalizar la remuneración BRUTA
-    5. Determinar importes de aportes
-    6. Determinar remuneración NETA
-    */
-   alert('🔴 Pendiente de desarrollo!')
+    // Validación de que están todos los datos
+    if ([nombre, mes, convenio, diasTrabajados].indexOf(undefined) != -1) {
+        alert('🔴 Falta alguno de los siguientes datos:\nNombre\nMes\nConvenio\nDías trabajados')
+        return false
+    }
+
+    let salarioMes = 0
+
+    // Salario base
+    let sueldoBasico = salarioBase / diasSueldo * diasTrabajados
+    salarioMes += sueldoBasico
+
+    // Valor hora
+    let valorHora = salarioBase / 200
+
+    // Adición de horas extras
+    let valorExtraSemana = ponderadorExtrasSemana * hsExtSemana * valorHora
+    let valorExtraFinde = ponderadorExtrasFinde * hsExtFinde * valorHora
+
+    salarioMes += valorExtraSemana + valorExtraFinde
+
+    // Salario BRUTO
+    let bruto = salarioMes
+
+    // Determinación de aportes sobre sueldo
+    let jubilacion = bruto * porcentajeJubilacion
+    let obraSocial = bruto * porcentajeObraSocial
+    let pami = bruto * porcentajePami
+
+    let aportes = jubilacion + obraSocial + pami
+
+    // Determinación del salario NETO
+    let neto = bruto - aportes
+
+    // Recibo de sueldo
+    let recibo = `RECIBO DE HABERES\n` +
+                `-----------------------\n` +
+                `Empleado: ${nombre}\n` +
+                `Periodo liquidado: ${mes}\n` +
+                `Convenio Colectivo: ${convenio}\n\n` +
+                `Sueldo básico (${diasTrabajados} días): ${ currencyFormat(sueldoBasico) }\n` +
+                `Hs. Extras 150% (${hsExtSemana} hs): ${ currencyFormat(valorExtraSemana) }\n` +
+                `Hs. Extras 200% (${hsExtFinde} hs): ${ currencyFormat(valorExtraFinde) }\n` +
+                ` > SUELDO BRUTO: ${ currencyFormat(bruto) }\n\n` +
+                `Aporte Jubilación (11%): ${ currencyFormat(-jubilacion) }\n` +
+                `Aporte Obra Social (3%): ${ currencyFormat(-obraSocial) }\n` +
+                `Aporte PAMI (3%): ${ currencyFormat(-pami) }\n` +
+                ` > SUELDO NETO: ${ currencyFormat(neto) }\n`
+
+    alert(recibo)
+    return true
 }
 
 function salir() {
